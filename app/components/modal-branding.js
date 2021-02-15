@@ -20,6 +20,7 @@ export default ModalComponent.extend({
     notifications: service(),
     session: service(),
     settings: service(),
+    ajax: service(),
 
     imageExtensions: IMAGE_EXTENSIONS,
     imageMimeTypes: IMAGE_MIME_TYPES,
@@ -28,7 +29,23 @@ export default ModalComponent.extend({
 
     dirtyAttributes: false,
 
+    icon: computed.reads('settings.icon'),
+    logo: computed.reads('settings.logo'),
+    coverImage: computed.reads('settings.coverImage'),
+
     previewGuid: (new Date()).valueOf(),
+
+    frontendUrl: computed('config.blogUrl', function () {
+        return `${this.get('config.blogUrl')}/welcome/`;
+    }),
+
+    themePreviewUrl: computed(function () {
+        let origin = window.location.origin;
+        let subdir = this.ghostPaths.subdir;
+        let url = this.ghostPaths.url.join(origin, subdir);
+
+        return url.replace(/\/$/, '/ghost/preview/');
+    }),
 
     accentColorPickerValue: computed('settings.accentColor', function () {
         return this.get('settings.accentColor') || '#ffffff';
@@ -46,10 +63,26 @@ export default ModalComponent.extend({
         return htmlSafe(`background-color: ${this.accentColorPickerValue}`);
     }),
 
+    getPreviewData: computed('accentColor', 'icon', 'logo', 'coverImage', function () {
+        let string = `c=%23${this.accentColor}&icon=${this.icon}&logo=${this.logo}`;
+
+        return string;
+    }),
+
     init() {
         this._super(...arguments);
         this.iconExtensions = ICON_EXTENSIONS;
-        this.refreshPreview();
+        console.log('init');
+    },
+
+    didInsertElement() {
+        console.log('did insert');
+        window.addEventListener('message', (event) => {
+            console.log('got message');
+            if (event && event.data && event.data === 'loaded') {
+                this.replacePreview();
+            }
+        });
     },
 
     actions: {
@@ -101,8 +134,9 @@ export default ModalComponent.extend({
 
         async removeImage(image) {
             // setting `null` here will error as the server treats it as "null"
-            this.settings.set(image, '');
-            await this.save.perform();
+            // this.settings.set(image, '');
+            // await this.save.perform();
+            this.set(image, '');
             this.refreshPreview();
         },
 
@@ -129,8 +163,9 @@ export default ModalComponent.extend({
          */
         async imageUploaded(property, results) {
             if (results[0]) {
-                let result = this.settings.set(property, results[0].url);
-                await this.save.perform();
+                // let result = this.settings.set(property, results[0].url);
+                // await this.save.perform();
+                let result = this.set(property, results[0].url);
                 this.refreshPreview();
                 return result;
             }
@@ -139,6 +174,39 @@ export default ModalComponent.extend({
         updateAccentColor(event) {
             this._updateAccentColor(event);
         }
+    },
+
+    replacePreview() {
+        const ghostFrontendUrl = this.frontendUrl;
+        console.log('REFRESHING PREVIEW', ghostFrontendUrl);
+
+        const options = {
+            contentType: 'text/html;charset=utf-8',
+            // ember-ajax will try and parse the response as JSON if not explicitly set
+            dataType: 'text',
+            headers: {
+                'x-ghost-preview': this.getPreviewData
+            }
+        };
+
+        this.ajax
+            .post(ghostFrontendUrl, options)
+            .then((response) => {
+                console.log('got result');
+                this.getPreviewIframe().contentWindow.postMessage(response, '*');
+            })
+            .catch((err) => {
+                console.error('error', err);
+            });
+    },
+
+    refreshPreview() {
+        // this.set('previewGuid',(new Date()).valueOf());
+        // REset the src and trigger a reload
+        this.getPreviewIframe().src = this.themePreviewUrl;
+    },
+    getPreviewIframe() {
+        return document.getElementById('site-frame');
     },
 
     debounceUpdateAccentColor: task(function* (event) {
@@ -177,7 +245,7 @@ export default ModalComponent.extend({
 
             // clear out the accent color
             this.settings.set('accentColor', '');
-            await this.save.perform();
+            // await this.save.perform();
             this.refreshPreview();
             return;
         }
@@ -197,16 +265,13 @@ export default ModalComponent.extend({
             }
 
             this.set('settings.accentColor', newColor);
-            await this.save.perform();
+            // await this.save.perform();
             this.refreshPreview();
         } else {
             this.get('settings.errors').add('accentColor', 'The colour should be in valid hex format');
             this.get('settings.hasValidated').pushObject('accentColor');
             return;
         }
-    },
-
-    refreshPreview() {
-        this.set('previewGuid',(new Date()).valueOf());
     }
+
 });

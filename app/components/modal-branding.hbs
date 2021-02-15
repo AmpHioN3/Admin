@@ -27,7 +27,7 @@
                             {{uploader.progressBar}}
                         {{else if this.settings.icon}}
                             <div class="gh-branding-image-container transparent-bg">
-                                <img class="blog-icon" src="{{this.settings.icon}}" alt="icon" data-test-icon-img>
+                                <img class="blog-icon" src="{{this.icon}}" alt="icon" data-test-icon-img>
                                 <button type="button" class="gh-setting-action-smallimg-delete" {{action "removeImage" "icon"}} data-test-delete-image="icon">
                                     {{svg-jar "trash" class="w4 h4 fill-white"}}
                                 </button>
@@ -61,7 +61,7 @@
                                 {{uploader.progressBar}}
                             {{else if this.settings.logo}}
                                 <div class="gh-branding-image-container largeimg justify-center transparent-bg">
-                                    <img class="blog-logo" src="{{this.settings.logo}}" alt="logo" data-test-logo-img>
+                                    <img class="blog-logo" src="{{this.logo}}" alt="logo" data-test-logo-img>
                                     <button type="button" class="gh-setting-action-smallimg-delete" {{action "removeImage" "logo"}} data-test-delete-image="logo">
                                         {{svg-jar "trash" class="w4 h4 fill-white"}}
                                     </button>
@@ -96,7 +96,7 @@
                                 {{uploader.progressBar}}
                             {{else if this.settings.coverImage}}
                                 <div class="gh-branding-image-container largeimg">
-                                    <img class="blog-cover" src="{{this.settings.coverImage}}" alt="cover photo" data-test-cover-img>
+                                    <img class="blog-cover" src="{{this.coverImage}}" alt="cover photo" data-test-cover-img>
                                     <button type="button" class="gh-setting-action-largeimg-delete" {{action "removeImage" "coverImage"}} data-test-delete-image="coverImage">
                                         {{svg-jar "trash" class="w4 h4 fill-white"}}
                                     </button>
@@ -164,8 +164,12 @@
         </section>
 
         <section class="gh-branding-settings-right">
-            <GhBrowserPreview class="gh-branding-settings-previewcontainer" @icon={{this.settings.icon}} @title={{this.config.blogTitle}}>
-                <GhSiteIframe class="gh-branding-settings-preview" @guid={{this.previewGuid}}></GhSiteIframe>
+            <GhBrowserPreview class="gh-branding-settings-previewcontainer" @icon={{this.icon}} @title={{this.config.blogTitle}}>
+                <GhSiteIframe
+                    class="gh-branding-settings-preview"
+                    @src={{this.themePreviewUrl}}
+                    @guid={{this.previewGuid}}
+                ></GhSiteIframe>
             </GhBrowserPreview>
         </section>
     </div>
